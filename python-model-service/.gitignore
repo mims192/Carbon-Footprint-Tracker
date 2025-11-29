@@ -1,0 +1,45 @@
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+eggs/
+*.egg-info/
+.installed.cfg
+*.manifest
+*.spec
+
+# Editors and IDEs
+.vscode/
+.idea/
+*.swp
+*.bak
+*~
+.DS_Store
+
+# Logs and temporary files
+*.log
+*.tmp
+tmp/
+
+# Jupyter Notebook specific files
+.ipynb_checkpoints/
+
+# Database files
+*.sqlite3
+db.sqlite3
+
+# Environment variables
+.env
