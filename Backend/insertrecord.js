@@ -3,7 +3,7 @@ import { MongoClient, ObjectId } from "mongodb";
 const uri = "mongodb+srv://rivx192_db_user:00VrqciYch2qdYMO@tracker.e8wjjxz.mongodb.net/?appName=tracker";
 const client = new MongoClient(uri);
 
-const userId = new ObjectId("6929b9fcc091efb900ceffca");
+const userId = new ObjectId("692b558172c55aad16cacc17");
 
 const categories = ["Food", "Electricity", "Waste", "Shopping", "Water","Transport"];
 

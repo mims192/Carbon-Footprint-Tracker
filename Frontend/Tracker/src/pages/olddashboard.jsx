@@ -1,28 +1,34 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import API from "../api";
 
 import RecentActivityss from "../Components/RecentActvityss";
 import QuickAddActivity from "../Components/QuickAddActivity";
 import Navbar from "../Components/Navbar";
 import Leaderboard from "../Components/Leaderboard";
+import Recommendations from "./Recommendations";
+
 export default function Dashboard() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const now = new Date();
+
+  const [month, setMonth] = useState(Number(searchParams.get("month")) || now.getMonth() + 1);
+  const [year, setYear] = useState(Number(searchParams.get("year")) || now.getFullYear());
+
   const [user, setUser] = useState(null);
   const [stats, setStats] = useState({ monthlyTotal: 0, activities: [] });
+  const [previousMonthTotal, setPreviousMonthTotal] = useState(null);
 
-  useEffect(()=> {
-    if (!userId) {
-      // not logged in - redirect to login
-      navigate("/login");
-      return;
-    }
+  useEffect(() => {
+    if (!userId) return navigate("/login");
     loadUser();
     loadStats();
   }, [userId]);
 
-  async function loadUser(){
+  async function loadUser() {
     try {
       const res = await API.get(`/auth/${userId}`);
       setUser(res.data.user);
@@ -31,57 +37,164 @@ export default function Dashboard() {
     }
   }
 
-  async function loadStats(){
+  async function loadStats() {
     try {
-      const { data } = await API.get(`/dashboard/${userId}/monthly-carbon`);
+      setSearchParams({ month, year });
+
+      const { data } = await API.get(`/dashboard/${userId}/monthly-carbon`, {
+        params: { month, year },
+      });
       setStats(data);
+
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+
+      const prevResp = await API.get(`/dashboard/${userId}/monthly-carbon`, {
+        params: { month: prevMonth, year: prevYear },
+      });
+
+      setPreviousMonthTotal(prevResp.data.monthlyTotal);
     } catch (err) {
-      console.error(err);
+      console.log(err);
     }
   }
 
-  // Calculate total points from all activities
-  const totalPoints = stats.activities.reduce((sum, activity) => sum + (activity.points || 0), 0);
+  let comparisonText = "No previous data";
+  let comparisonClass = "";
+  if (previousMonthTotal !== null) {
+    if (stats.monthlyTotal < previousMonthTotal) {
+      comparisonText = `▼ Improved from ${previousMonthTotal.toFixed(2)} kg`;
+      comparisonClass = "text-green-400";
+    } else if (stats.monthlyTotal > previousMonthTotal) {
+      comparisonText = `▲ Higher than ${previousMonthTotal.toFixed(2)} kg`;
+      comparisonClass = "text-red-400";
+    } else {
+      comparisonText = "No change";
+      comparisonClass = "text-yellow-400";
+    }
+  }
+
+  const totalPoints = stats.activities.reduce(
+    (sum, a) => sum + (a.points || 0),
+    0
+  );
 
   return (
     <div className="min-h-screen bg-slate-900 text-slate-100">
       <Navbar />
-      
+
       <div className="p-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-semibold">Welcome{user ? `, ${user.username}` : ""}</h2>
+        <h2 className="text-2xl font-semibold mb-6">
+          Welcome{user ? `, ${user.username}` : ""}
+        </h2>
+
+        {/* Month selection */}
+        <div className="flex gap-4 mb-6  ">
+          <select
+            value={month}
+            onChange={(e) => setMonth(Number(e.target.value))}
+            className="bg-slate-800 px-4 py-2 rounded w-[50%]"
+          >
+            {[...Array(12)].map((_, i) => (
+              <option key={i} value={i + 1}>
+                {new Date(0, i).toLocaleString("default", { month: "long" })}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="bg-slate-800 px-4 py-2 rounded w-[50%]"
+          >
+            {[2023, 2024, 2025, 2026].map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={loadStats}
+            className="bg-green-500 px-6 py-2 rounded font-semibold"
+          >
+            View
+          </button>
         </div>
 
+        {/* Summary cards */}
         <div className="grid grid-cols-2 gap-4 mb-8">
-          <div className="bg-slate-800 p-4 rounded">
-            <div className="text-slate-400 text-sm mb-1">Monthly Carbon</div>
-            <span className="text-2xl font-bold">{stats.monthlyTotal.toFixed(3)} kg</span>
+          <div className="bg-slate-800 p-4 rounded border-2 border-green-500">
+            <div className="text-slate-400 text-sm mb-1">
+              Carbon for {new Date(year, month - 1).toLocaleString("default", { month: "long" })}{" "}
+              {year}
+            </div>
+            <span className="text-2xl font-bold">{stats.monthlyTotal.toFixed(2)} kg</span>
+            <p className={`mt-2 text-sm font-semibold ${comparisonClass}`}>
+              {comparisonText}
+            </p>
           </div>
-          <div className="bg-slate-800 p-4 rounded">
+
+          <div className="bg-slate-800 p-4 rounded border-2 border-blue-500">
             <div className="text-slate-400 text-sm mb-1">Total Points</div>
             <span className="text-2xl font-bold text-green-400">{totalPoints}</span>
           </div>
         </div>
 
-        <div className="mb-8">
-          <QuickAddActivity userId={userId} onAdded={loadStats}/>
-        </div>
+        <QuickAddActivity userId={userId} onAdded={loadStats} />
 
-        <div className="grid grid-cols-3 gap-6">
+        {/* MAIN GRID LAYOUT */}
+        <div className="grid grid-cols-3 gap-6 mt-8">
+
+          {/* Left section (takes 2 columns) */}
           <div className="col-span-2 bg-slate-800 p-6 rounded">
             <h2 className="text-xl mb-4">Recent Activities</h2>
             <RecentActivityss activities={stats.activities} />
           </div>
-          <div className="bg-slate-800 p-6 rounded">
-            <h2 className="text-xl">Eco Tips</h2>
-            <p className="mt-4 text-slate-300 border-b border-slate-700 pb-2">Switch to LED bulbs to reduce electricity consumption by up to 75%.</p>
-            <p className="mt-4 text-slate-300 border-b border-slate-700 pb-2">Use public transport instead of driving to reduce carbon emissions.</p>
-            <p className="mt-4 text-slate-300 border-b border-slate-700 pb-2">Reduce, reuse, and recycle to reduce waste.</p>
-            <p className="mt-4 text-slate-300 border-b border-slate-700 pb-2">Use a reusable water bottle instead of a plastic one.</p>
+
+          {/* Right section (vertical stack of Eco Tips + Recommendations) */}
+          <div className="flex flex-col gap-6">
+            <Recommendations userId={userId} />
+
+            {/* Eco Tips */}
+            <div className="bg-slate-800 p-6 rounded">
+              <h2 className="text-xl">Eco Tips</h2>
+              <p className="mt-4 border-b pb-2 text-slate-300">Use LED bulbs</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Walk or use public transport</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Recycle</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Use reusable items</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Choose energy-efficient appliances</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Carry your own water bottle</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Avoid single-use plastics</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Compost kitchen waste</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Buy local and seasonal foods</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Air-dry clothes instead of using dryers</p>
+              <p className="mt-4 border-b pb-2 text-slate-300">Fix leaks and drips promptly</p>
+
+            </div>
+
+         
+            
           </div>
-      
         </div>
+
         <Leaderboard />
+        <div className="grid grid-cols-2 gap-4 mb-8">
+  <div className="bg-slate-800 p-4 rounded border-2 border-yellow-500">
+    <div className="text-slate-400 text-sm mb-1">Daily Streak</div>
+    <span className="text-2xl font-bold text-yellow-300">
+      {user?.streak || 0} 🔥
+    </span>
+  </div>
+
+  <div className="bg-slate-800 p-4 rounded border-2 border-purple-500">
+    <div className="text-slate-400 text-sm mb-1">Level</div>
+    <span className="text-2xl font-bold text-purple-300">
+      {user?.level || 1}
+    </span>
+  </div>
+</div>
+
       </div>
     </div>
   );

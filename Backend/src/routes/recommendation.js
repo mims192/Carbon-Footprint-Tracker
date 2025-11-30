@@ -13,50 +13,33 @@ router.get("/:userId/recommendation", async (req, res) => {
     // 1️⃣ Fetch all profiles to run clustering
     const profiles = await UserProfile.find().lean();
 
-    // 2️⃣ Send to Python clustering service
-    const resp = await axios.post(`${PY_URL}/model3/cluster`, { profiles });
-
-    const { profiles: clusteredProfiles, labels } = resp.data;
-
-    // 3️⃣ Find cluster of current user
-    const userData = clusteredProfiles.find((u) => u._id == userId);
-
-    if (!userData) {
-      return res.status(404).json({ error: "User not found in clustering results" });
+    if (!profiles || profiles.length === 0) {
+      return res.status(404).json({ 
+        error: "No user profiles found. Please create a profile first." 
+      });
     }
 
-    const userCluster = userData.cluster_label_name;
+    // Convert MongoDB ObjectIds to strings for Python
+    const profilesWithStringIds = profiles.map(p => ({
+      ...p,
+      _id: p._id.toString(),
+      userId: p.userId.toString()
+    }));
 
-    // 4️⃣ Recommendations based on cluster type
-    const recommendationMap = {
-      "Low-Impact / Eco-conscious": [
-        "Great job! Keep up your sustainable lifestyle.",
-        "Consider sharing your journey to inspire others.",
-        "Try composting or solar energy if not already doing."
-      ],
-      "Moderate Lifestyle": [
-        "Try reducing long-distance travel or use public transport.",
-        "Switch to energy-efficient appliances.",
-        "Reduce purchase frequency and reuse where possible."
-      ],
-      "High-Impact / Energy Intensive": [
-        "Reduce meat consumption and travel emissions.",
-        "Reduce electricity use and switch to energy-efficient devices.",
-        "Start carbon offsetting or use renewable energy sources."
-      ]
-    };
-
-    const recommendations = recommendationMap[userCluster] || ["No recommendations available."];
-
-    return res.json({
-      userId,
-      cluster: userCluster,
-      recommendations
+    // 2️⃣ Send to Python model3 recommendation service
+    const resp = await axios.post(`${PY_URL}/model3/recommend`, { 
+      userId: userId,
+      profiles: profilesWithStringIds 
     });
 
+    // 3️⃣ Return the recommendations
+    return res.json(resp.data);
+
   } catch (error) {
-    console.error("Recommendation Error:", error);
-    return res.status(500).json({ error: error.message });
+    console.error("Recommendation Error:", error.response?.data || error.message);
+    return res.status(500).json({ 
+      error: error.response?.data?.error || error.message 
+    });
   }
 });
 

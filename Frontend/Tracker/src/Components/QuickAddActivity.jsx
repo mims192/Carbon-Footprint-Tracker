@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import API from "../api";
 
 export default function QuickAddActivity({ userId, onAdded }) {
-  const [category, setCategory] = useState("Waste");
+  const [category, setCategory] = useState("Electricity");
   const [form, setForm] = useState({});
 
   async function submit(e){
@@ -18,8 +18,9 @@ export default function QuickAddActivity({ userId, onAdded }) {
     });
     setForm({});
     if(onAdded) onAdded();
+    
   }
-
+  
   return (
     <form onSubmit={submit} className="bg-slate-800 p-6 rounded">
       <div className="flex gap-4 mb-6">

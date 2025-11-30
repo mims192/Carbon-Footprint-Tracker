@@ -8,7 +8,7 @@ import dashboardRoutes from "./src/routes/dashboard.js";
 import modelProxy from "./src/routes/modelProxy.js";
 import authRoutes from "./src/routes/auth.js"
 import recommendationroutes from "./src/routes/recommendation.js"
-
+import leaderboardRoutes from "./src/routes/leaderboard.js"
 dotenv.config();
 const app = express();
 app.use(express.json());
@@ -27,7 +27,7 @@ app.use("/api/activity", activityRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/model", modelProxy);
 app.use("/api/recommend", recommendationroutes);
-
+app.use("/api/leaderboard",leaderboardRoutes)
 
 const PORT = process.env.PORT || 3000;
 

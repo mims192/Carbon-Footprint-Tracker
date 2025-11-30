@@ -21,7 +21,7 @@ export default function Recommendations({ userId }) {
   if (!data) return <p>Loading recommendations...</p>;
 
   return (
-    <div className="bg-slate-800 p-6 mt-6 rounded">
+    <div className="bg-slate-800 p-6 rounded">
       <h2 className="text-xl font-semibold mb-4">Your Personalized Recommendations</h2>
       <p className="text-slate-400">Cluster: {data.cluster}</p>
 

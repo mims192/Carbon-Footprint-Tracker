@@ -3,7 +3,7 @@ import React, { useState } from "react";
 
 function Navbar({ onLogout }) {
   const [open, setOpen] = useState(false);
-
+ 
   return (
     <div>
       <header className="flex justify-between items-center px-8 py-4 border-b border-gray-800 bg-gray-900 relative">

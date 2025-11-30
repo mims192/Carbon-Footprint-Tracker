@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import API from "../api";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 export default function Signup() {
   const [form, setForm] = useState({ username: "", email: "", password: "" });
@@ -16,7 +16,7 @@ export default function Signup() {
       // save user id locally (no JWT)
       localStorage.setItem("ecotrack_userId", user._id);
       // navigate to dashboard
-      navigate(`/dashboard/${user._id}`);
+      navigate("/login");
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.error || "Signup failed");
@@ -35,6 +35,7 @@ export default function Signup() {
         <label className="block mb-2">Password</label>
         <input type="password" className="w-full p-2 mb-4 bg-slate-700 rounded" value={form.password} onChange={e=>setForm({...form, password: e.target.value})} />
         <button className="w-full py-2 rounded bg-emerald-500">Sign up</button>
+       <p className="mt-3">Already a member? <Link to='/login' className=" text-emerald-400">Login</Link></p> 
       </form>
     </div>
   );
